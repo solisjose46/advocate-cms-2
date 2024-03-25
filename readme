@@ -1,0 +1,8 @@
+Most changes to advocate-2 will be done from this project but in case there was a change made outside of here to it
+update the project with:
+
+git submodule update --remote
+
+To push changes from here to its own repo:
+
+commit the changes in the submodule directory, then commit the updated submodule reference in the main repository.
