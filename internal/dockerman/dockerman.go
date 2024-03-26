@@ -2,6 +2,7 @@ package dockerman
 
 import (
     "fmt"
+    "io"
     "context"
     "github.com/docker/docker/api/types"
     // "github.com/docker/docker/api/types/container"
@@ -59,7 +60,15 @@ func StartAdvocate() error {
         return err
     }
 
-    fmt.Println(resp.Body)
+    // get response as string to print
+    bodyContent, err := io.ReadAll(resp.Body)
+
+    if err != nil {
+        fmt.Println("Error getting image build response.")
+        return err
+    }
+
+    fmt.Println(string(bodyContent))
 
     return nil
 }
