@@ -10,7 +10,7 @@ commit the changes in the submodule directory, then commit the updated submodule
 Helpful docker commands for debugging
 -------------------------------------
 
-Get ip address: docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' container_name_or_id
+Get ip address: docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' TESTING123
 
 Delete all containers:
 docker stop $(docker ps -aq)

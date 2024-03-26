@@ -6,11 +6,10 @@ import (
 )
 
 func main() {
-    err := dockerman.StartAdvocate()
+    err := dockerman.StartAdvocatePreview()
 
     if err != nil {
-        fmt.Println("Error:")
-        fmt.Println(err)
+        fmt.Println("Error with advocate preview", err)
         return
     }
 
