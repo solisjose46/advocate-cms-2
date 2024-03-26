@@ -1,88 +1,65 @@
 package dockerman
 
 import (
-    "archive/tar"
-    "bytes"
+    "fmt"
     "context"
-    "io"
-    "os"
-    "path/filepath"
-
     "github.com/docker/docker/api/types"
-    "github.com/docker/docker/api/types/container"
+    // "github.com/docker/docker/api/types/container"
     "github.com/docker/docker/client"
+    "github.com/docker/docker/pkg/archive"
 )
 
-func CreateAdvocateContainer() error {
+// build image from docker file
+func buildAdvocateImage(cli *client.Client) (types.ImageBuildResponse, error) {
     ctx := context.Background()
-    cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+
+    buildContext, err := archive.Tar("./", archive.Uncompressed)
+
     if err != nil {
-        return err
+        fmt.Println("Error building tar for build context")
+        return types.ImageBuildResponse{}, err
     }
 
-    // Create a buf to hold the tarred data to copy
-    buf := new(bytes.Buffer)
-    tw := tar.NewWriter(buf)
-    defer tw.Close()
-
-    // Walk the directory and tar each file
-    dirPath := "./advocate-2"
-    filepath.Walk(dirPath, func(file string, fi os.FileInfo, err error) error {
-        if err != nil {
-            return err
-        }
-
-        // create a new dir/file header
-        header, err := tar.FileInfoHeader(fi, file)
-        if err != nil {
-            return err
-        }
-
-        header.Name = filepath.ToSlash(file)
-
-        // write the header
-        if err := tw.WriteHeader(header); err != nil {
-            return err
-        }
-
-        // if not a dir, write file content
-        if !fi.IsDir() {
-            data, err := os.Open(file)
-            if err != nil {
-                return err
-            }
-            if _, err := io.Copy(tw, data); err != nil {
-                return err
-            }
-            data.Close()
-        }
-        return nil
-    })
-
-    tw.Close()
-
-    // Use the Docker SDK to create and start a container
-    resp, err := cli.ContainerCreate(ctx, &container.Config{
-        Image: "golang:latest",
-        WorkingDir: "/app",
-        // Entrypoint:   []string{"go", "run", "/app/main.go"},
-    }, nil, nil, nil, "")
+    buildOptions := types.ImageBuildOptions{
+        Dockerfile: "internal/dockerman/Dockerfile",
+        Tags:       []string{"gotesting1"},
+    }
     
+    resp, err := cli.ImageBuild(ctx, buildContext, buildOptions)
+
+    if err != nil {
+        return types.ImageBuildResponse{}, err
+    }
+
+    return resp, nil
+}
+
+// create container from image
+// func createAdvocateContainer() error {
+
+// }
+
+// run image
+// func startAdvocateContainer() error {
+
+// }
+
+func StartAdvocate() error {
+    // Initialize our docker client
+    cli, err := client.NewClientWithOpts(client.FromEnv)
     if err != nil {
         return err
     }
+    defer cli.Close()
 
-    // Copy the buffer to the container
-    err = cli.CopyToContainer(ctx, resp.ID, "/app", buf, types.CopyToContainerOptions{})
-        
+    resp, err := buildAdvocateImage(cli)
+
     if err != nil {
+        fmt.Println("Error building image")
         return err
     }
 
-    // Start the container
-    if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-        return err
-    }
+    fmt.Println(resp.Body)
 
     return nil
 }

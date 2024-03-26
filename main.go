@@ -6,12 +6,13 @@ import (
 )
 
 func main() {
-    err := dockerman.CreateAdvocateContainer() 
-    if   err != nil {
-        fmt.Println("Error creating docker image")
+    err := dockerman.StartAdvocate()
+
+    if err != nil {
+        fmt.Println("Error:")
         fmt.Println(err)
         return
     }
 
-	fmt.Println("Docker started")
+	fmt.Println("Good test")
 }
