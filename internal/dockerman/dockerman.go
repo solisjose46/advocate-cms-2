@@ -1,68 +1,65 @@
 package dockerman
 
 import (
+	"context"
 	"fmt"
-    "context"
-    "os"
-	"archive/tar"
-    "github.com/docker/docker/api/types"
-    "github.com/docker/docker/api/types/container"
-    "github.com/docker/docker/client"
-    "github.com/docker/docker/pkg/stdcopy"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 )
 
-func CreateAdvocateDocker() error {
-	fmt.Println("crash 1")
-    ctx := context.Background()
-    cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-    if err != nil {
-        return err
-    }
-	fmt.Println("crash 2")
+func CreateAdvocateContainer() error {
+	// Create a new Docker client
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return err
+	}
 
-    // Path to Dockerfile
-    dockerBuildContext, err := os.Open(".")
-    if err != nil {
-        return err
-    }
-    defer dockerBuildContext.Close()
+	// Pull the Docker image (optional)
+	imageName := "golang:latest"
+	err = pullImage(cli, imageName)
+	if err != nil {
+		return err
+	}
 
-	fmt.Println("crash 3a")
+	// Define container configuration
+	containerConfig := &container.Config{
+		Image: imageName
+	}
 
-    // Build the Docker image
-    buildOptions := types.ImageBuildOptions{
-        Dockerfile: "Dockerfile", // assuming Dockerfile is in the current directory
-        Remove:     true,         // Remove intermediate containers after a successful build
-    }
-    buildResponse, err := cli.ImageBuild(ctx, dockerBuildContext, buildOptions)
-    if err != nil {
-		fmt.Println("response error here")
-        return err
-    }
-    defer buildResponse.Body.Close()
+	// Create the container
+	resp, err := cli.ContainerCreate(context.Background(), containerConfig, nil, nil, nil, "")
+	if err != nil {
+		return err
+	}
 
-	fmt.Println("crash 3")
+	// Start the container
+	err = cli.ContainerStart(context.Background(), resp.ID, container.StartOptions{})
+	if err != nil {
+		return err
+	}
 
-    // Optionally, output the build response to stdout
-    _, err = stdcopy.StdCopy(os.Stdout, os.Stderr, buildResponse.Body)
-    if err != nil {
-        return err
-    }
+	fmt.Printf("Container %s started successfully.\n", resp.ID)
 
-    // Create a container from the built image
-    containerConfig := &container.Config{
-        Image: "testing_advocate",
-    }
-    containerResp, err := cli.ContainerCreate(ctx, containerConfig, nil, nil, nil, "")
-    if err != nil {
-        return err
-    }
-
-    // Start the container
-    if err := cli.ContainerStart(ctx, containerResp.ID, container.StartOptions{}); err != nil {
-        return err
-    }
-
-    // The container is now running
     return nil
+}
+
+func pullImage(cli *client.Client, imageName string) error {
+	out, err := cli.ImagePull(context.Background(), imageName, types.ImagePullOptions{})
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Print the pull status
+	buf := make([]byte, 1024)
+	for {
+		_, err := out.Read(buf)
+		if err != nil {
+			break
+		}
+	}
+
+	return nil
 }

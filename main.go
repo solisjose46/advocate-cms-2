@@ -8,7 +8,7 @@ import (
 
 func main() {
 
-    var err = dockerman.CreateAdvocateDocker() 
+    var err = dockerman.CreateAdvocateContainer() 
 
     if  err != nil {
         fmt.Println("Error creating docker image")
