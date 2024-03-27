@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	cmsDBPath = "db/cms.db"
-	advDBPath = "db/advocate.db"
-	saltSuffix = ":salt"
+	cmsDBPath = "dao/db/cms.db"
+	advDBPath = "dao/db/advocate.db"
+	saltSuffix = ":salt" // for dev purposes of course
 	loginQuery = "SELECT Users.password FROM Users WHERE Users.username = ?"
 )
 

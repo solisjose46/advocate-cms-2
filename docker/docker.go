@@ -153,7 +153,7 @@ func (d *Docker) StartAdvocatePreview() error {
 
     // get response as string to print
     // bodyContent, err := io.ReadAll(resp.Body) // debugging
-    _, err = io.ReadAll(resp.Body)
+    _, err = io.ReadAll(resp.Body) // must read to start stream
 
     if err != nil {
         fmt.Println("Error getting image build response.")
