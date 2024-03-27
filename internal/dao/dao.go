@@ -8,41 +8,51 @@ import (
 )
 
 const (
-	cmsDbPath = "db/cms.db"
-	advocateDbPath = "db/advocate.db"
+	cmsDBPath = "db/cms.db"
+	advDBPath = "db/advocate.db"
 	saltSuffix = ":salt"
 	loginQuery = "SELECT Users.password FROM Users WHERE Users.username = ?"
 )
 
 type Dao struct {
-	Cms *sql.DB
-	Advocate *sql.DB
+	cmsDB *sql.DB
+	advDB *sql.DB
 }
 
 func DatabaseInit() (*Dao, error) {
 	// open cms database
-	cmsDb, err  := sql.Open("sqlite3", cmsDbPath)
+	cmsDB, err  := sql.Open("sqlite3", cmsDBPath)
 	if err != nil {
 		fmt.Println("Error trying to open cms database.")
 		return nil, err
 	}
     
 	// open advocate database
-	advocateDb, err := sql.Open("sqlite3", advocateDbPath)
+	advDB, err := sql.Open("sqlite3", advDBPath)
 	if err != nil {
 		fmt.Println("Error trying to open advocate database.")
-		cmsDb.Close()
+		cmsDB.Close()
 		return nil, err
 	}
 
 	return &Dao{
-		Cms: cmsDb,
-		Advocate: advocateDb,
+		cmsDB: cmsDB,
+		advDB: advDB,
 	}, nil
 }
 
+func (db *Dao) CloseDatabase() {
+	if db.cmsDB != nil {
+		db.cmsDB.Close()
+	}
+
+	if db.advDB != nil {
+		db.advDB.Close()
+	}
+}
+
 func (db *Dao) IsValidLogin(username, password string) (bool, error) {
-	userRow, err := db.Cms.Query(loginQuery, username)
+	userRow, err := db.cmsDB.Query(loginQuery, username)
 	
 	if err != nil {
 		fmt.Println("Error with login query")

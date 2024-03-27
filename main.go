@@ -220,8 +220,7 @@ func main() {
         return
     }
 
-    defer db.Cms.Close()
-    defer db.Advocate.Close()
+    defer db.CloseDatabase()
 
 	fmt.Println("Database initialized!")
 

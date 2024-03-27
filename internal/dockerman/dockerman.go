@@ -28,6 +28,11 @@ const (
     port = ":8090"
 )
 
+type Dockerman struct {
+    ctx context.Context
+    cli *client.Client
+}
+
 func getContainerIpAddr(ctx context.Context, cli *client.Client, containerID string) (string, error) {
     containerJSON, err := cli.ContainerInspect(ctx, containerID)
     if err != nil {
