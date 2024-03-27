@@ -1,4 +1,4 @@
-package dockerman
+package docker
 
 import (
     "fmt"
@@ -22,19 +22,38 @@ const (
     buildCtxDir = "./"
 
     // path for Dockerfile in build context dir
-    dockerfilePath = "internal/dockerman/Dockerfile"
+    dockerfilePath = "internal/docker/Dockerfile"
 
     // exposed port on advocate container
     port = ":8090"
 )
 
-type Dockerman struct {
+type Docker struct {
     ctx context.Context
     cli *client.Client
 }
 
-func getContainerIpAddr(ctx context.Context, cli *client.Client, containerID string) (string, error) {
-    containerJSON, err := cli.ContainerInspect(ctx, containerID)
+func NewDockerClient() (*Docker, error) {
+    cli, err := client.NewClientWithOpts(client.FromEnv)
+    if err != nil {
+        fmt.Println("There was an error creating docker client.")
+        return err
+    }
+
+    return &Docker {
+        ctx: context.Background(),
+        cli: cli
+    }
+}
+
+func (d *Docker) CloseDockerClient() {
+    if d.cli != nil {
+        d.cli.Close()
+    }
+}
+
+func (d *Docker) getContainerIpAddr(containerID string) (string, error) {
+    containerJSON, err := d.cli.ContainerInspect(d.ctx, containerID)
     if err != nil {
         fmt.Println("Error with inspecting container")
         return "", err
@@ -46,8 +65,8 @@ func getContainerIpAddr(ctx context.Context, cli *client.Client, containerID str
 }
 
 // Removes preview container if it exists
-func removeAdvocateContainer(ctx context.Context, cli *client.Client) error {
-    containers, err := cli.ContainerList(ctx, container.ListOptions{All: true})
+func (d *Docker) removeAdvocateContainer() error {
+    containers, err := d.cli.ContainerList(d.ctx, container.ListOptions{All: true})
 
     if err != nil {
         fmt.Println("Error trying to get container list")
@@ -59,7 +78,7 @@ func removeAdvocateContainer(ctx context.Context, cli *client.Client) error {
     for _, container := range containers {
         for _, name := range container.Names {
             if name == "/"+containerName {
-                err = cli.ContainerRemove(ctx, container.ID, removeOpts)    
+                err = d.cli.ContainerRemove(d.ctx, container.ID, removeOpts)    
                 if err != nil {
                     fmt.Println("issue trying to remove container")
                     return err
@@ -74,7 +93,7 @@ func removeAdvocateContainer(ctx context.Context, cli *client.Client) error {
 }
 
 // build preview advocate image
-func buildAdvocateImage(ctx context.Context, cli *client.Client) (types.ImageBuildResponse, error) {
+func (d *Docker) buildAdvocateImage() (types.ImageBuildResponse, error) {
     buildContext, err := archive.Tar(buildCtxDir, archive.Uncompressed)
     if err != nil {
         fmt.Println("Error building tar for build context")
@@ -86,7 +105,7 @@ func buildAdvocateImage(ctx context.Context, cli *client.Client) (types.ImageBui
         Tags:       []string{imageName},
     }
     
-    resp, err := cli.ImageBuild(ctx, buildContext, buildOptions)
+    resp, err := d.cli.ImageBuild(d.ctx, buildContext, buildOptions)
 
     if err != nil {
         fmt.Println("Error creating advocate image")
@@ -97,9 +116,9 @@ func buildAdvocateImage(ctx context.Context, cli *client.Client) (types.ImageBui
 }
 
 // create container from image
-func createAdvocateContainer(ctx context.Context, cli *client.Client) (container.CreateResponse, error) {
-    resp, err := cli.ContainerCreate(
-        ctx,
+func (d *Docker) createAdvocateContainer() (container.CreateResponse, error) {
+    resp, err := d,cli.ContainerCreate(
+        d.ctx,
         &container.Config{
             Image: imageName,
         },
@@ -115,24 +134,15 @@ func createAdvocateContainer(ctx context.Context, cli *client.Client) (container
 }
 
 // run image
-func startAdvocateContainer(ctx context.Context, cli *client.Client, containerID string) error {
-    return cli.ContainerStart(ctx, containerID,  container.StartOptions{})
+func (d *Docker) startAdvocateContainer(containerID string) error {
+    return d.cli.ContainerStart(d.ctx, containerID,  container.StartOptions{})
 }
 
-func StartAdvocatePreview() error {
-
-    // Initialize our docker client
-    cli, err := client.NewClientWithOpts(client.FromEnv)
-    if err != nil {
-        return err
-    }
-    defer cli.Close()
-
-    ctx := context.Background()
+func (d *Docker) StartAdvocatePreview() error {
 
     // package latest go with advocate-2
     fmt.Println("Building advocate image...")
-    resp, err := buildAdvocateImage(ctx, cli)
+    resp, err := d.buildAdvocateImage()
 
     if err != nil {
         fmt.Println("Error building image.")
@@ -154,14 +164,14 @@ func StartAdvocatePreview() error {
     fmt.Println("Advocate image created!")
 
     // remove any existing advocate-2 container apps
-    err = removeAdvocateContainer(ctx, cli)
+    err = d.removeAdvocateContainer()
     if  err != nil {
         fmt.Println("Error trying to remove container")
     }
 
     // create app container from advocate image
     fmt.Println("Creating advocate container.")
-    createResp, err := createAdvocateContainer(ctx, cli)
+    createResp, err := d.createAdvocateContainer()
 
     if err != nil {
         fmt.Println("Create advocate container fail.")
@@ -172,7 +182,7 @@ func StartAdvocatePreview() error {
 
     fmt.Println("Starting preview container...")
 
-    err = startAdvocateContainer(ctx, cli, createResp.ID)
+    err = d.startAdvocateContainer(createResp.ID)
 
     if err != nil {
         fmt.Println("Error starting advocate container")
@@ -181,7 +191,7 @@ func StartAdvocatePreview() error {
 
     fmt.Println("Container started! id: ", createResp.ID)
 
-    ipAddr, err := getContainerIpAddr(ctx, cli, createResp.ID)
+    ipAddr, err := d.getContainerIpAddr(createResp.ID)
 
     if err != nil {
         fmt.Println("Error trying to get container ip address")
