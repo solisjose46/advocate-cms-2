@@ -26,7 +26,7 @@ type ServerCms struct {
 	cookieStore *CookieStore
 	db *dao.Dao
 	mux *ServeMux
-	tmpl *templates.Templates
+	*templates.Templates
 }
 
 func ServerInit() (*ServerCms) error {
@@ -42,6 +42,7 @@ func ServerInit() (*ServerCms) error {
 		cookieStore: sessions.NewCookieStore([]byte)),
 		db: db,
 		mux: http.NewServeMux(),
+		&template.Templates{}
 	}, nil
 }
 
@@ -85,5 +86,5 @@ func (server *ServerCms) mainHandler(w http.ResponseWriter, r *http.Request) {
 	server.authenticateUser(w, r)
 
 	// else return home page
-	server.tmpl.GetCmsHome().Execute(w, nil)
+	server.GetCmsHome().Execute(w, nil)
 }

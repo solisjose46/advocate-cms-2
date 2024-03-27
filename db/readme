@@ -1,0 +1,12 @@
+How to start cms db
+--------------------
+
+sqlite3
+
+.open cms.db
+
+.read scripts/cms_tables.sql
+
+To start over
+-------------
+delete cms.db and do the above
