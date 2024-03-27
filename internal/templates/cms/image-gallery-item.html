@@ -1,0 +1,18 @@
+{{define "imageGalleryItem"}}
+<div class="image-gallery-item" id="img-{{.ImgId}}">
+    <div class="gallery-image-details">
+        <div class="gallery-image-detail-container">
+            <div>Image Src</div>
+            <div class="image-src-value">{{.ImgSrc}}</div>
+        </div>
+        <div class="gallery-image-detail-container">
+            <div>Img Alt</div>
+            <div class="image-alt-value">{{.ImgAlt}}</div>
+        </div>
+    </div>
+    <div class="gallery-image-container">
+        <img src="/static/img/{{.ImgSrc}}" alt="{{.ImgAlt}}">
+    </div>
+
+</div>
+{{end}}

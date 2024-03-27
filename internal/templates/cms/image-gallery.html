@@ -1,0 +1,7 @@
+{{define "imageGallery"}}
+<div class="image-gallery">
+{{range .ImageGalleryItems}}
+    {{template "imageGalleryItem" .}}
+{{end}}
+</div>
+{{end}}

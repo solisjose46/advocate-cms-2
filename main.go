@@ -12,6 +12,7 @@ const (
 	homeEndpoint = "/"
 	loginEndpoint = "/login"
 	logoutEndpoint = "/logout"
+	uploadImageEndpoint = "/upload-image"
     httpErrorMethodNotAllowed = "Method Not Allowed"
     httpErrorInternalError = "Internal Server Error"
     httpErrorBadLogin = "Invalid Login"
@@ -55,6 +56,110 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
     // Redirect to the login page.
     http.Redirect(w, r, loginEndpoint, http.StatusSeeOther)
+}
+
+func uploadImageHandler(w http.ResponseWriter, r *http.Request) {
+	// check if user is authenticated
+	session, _ := store.Get(r, sessionKey)
+
+	_, ok := session.Values[sessionId].(string)
+
+	// if not authenticated redirect to /login
+	if !ok {
+		http.Redirect(w, r, loginEndpoint, http.StatusSeeOther)
+	}
+
+	// get crud page
+	if r.Method == http.MethodGet {
+		createCanvas := imageCanvas {
+			Title: createImageTitle,
+			Endpoint: uploadImageEndpoint,
+		}
+
+		templ, _ := template.ParseFiles(crudImageTmpl, cmsNavTmpl, imageGalleryTmpl, imageGalleryItemTmpl)
+		templ.ExecuteTemplate(w, tmplCrudImage, createCanvas)
+		return
+	}
+
+	// only post allowed after this
+	if r.Method != http.MethodPost {
+		http.Error(w, httpErrorMethodNotAllowd, http.StatusMethodNotAllowed)
+		return
+	}
+
+	// get form values and 
+	// Things to check for:
+	// image file not empty, image source not empty, image alt not empty
+	// image source is not duplicate
+	// image is not greater than 10mb
+
+	// prep our html response
+	resp := serverResponse {
+		ResponseStatus: serverRespSucc,
+		ResponseName: respSuccName,
+		ResponseDescription: respSuccDesc,
+	}
+
+	err := r.ParseMultipartForm(10 << 20)
+
+	if err != nil {
+		resp.ResponseStatus = serverRespError
+		resp.ResponseName = respErrorNameImageSize
+		resp.ResponseDescription = respErrorDescImageSize
+
+		templ, _ := template.ParseFiles(serverRespTmpl)
+		w.WriteHeader(http.StatusBadRequest)
+		templ.ExecuteTemplate(w, tmplServerResp, resp)
+		return
+	}
+
+    file, _, err := r.FormFile(htmlImage)
+	defer file.Close()
+
+    if err != nil {
+		resp.ResponseStatus = serverRespError
+		resp.ResponseName = respErrorNameNoFile
+		resp.ResponseDescription = respErrorDescNoFile
+
+		templ, _ := template.ParseFiles(serverRespTmpl)
+		w.WriteHeader(http.StatusBadRequest)
+		templ.ExecuteTemplate(w, tmplServerResp, resp)
+		return
+    }
+
+	imageSrc := r.FormValue(htmlImageSrc)
+	imageAlt := r.FormValue(htmlImageAlt)
+
+	if imageSrc == "" || imageAlt == "" {
+		resp.ResponseStatus = serverRespError
+		resp.ResponseName = respErrorNameMissingVal
+		resp.ResponseDescription = respErrorDescMissingVal
+
+		templ, _ := template.ParseFiles(serverRespTmpl)
+		w.WriteHeader(http.StatusBadRequest)
+		templ.ExecuteTemplate(w, tmplServerResp, resp)
+		return
+	}
+
+	if !uploadImage(imageSrc, imageAlt) {
+		resp.ResponseStatus = serverRespError
+		resp.ResponseName = respErrorNameDuplicate
+		resp.ResponseDescription = respErrorDescDuplicate
+
+		templ, _ := template.ParseFiles(serverRespTmpl)
+		w.WriteHeader(http.StatusBadRequest)
+		templ.ExecuteTemplate(w, tmplServerResp, resp)
+		return
+	}
+
+	// copy the file to image folder
+	outputFile, _ := os.Create(imageDirPath + imageSrc)
+	defer outputFile.Close()
+
+	io.Copy(outputFile, file)
+
+	templ, _ := template.ParseFiles(serverRespTmpl)
+	templ.ExecuteTemplate(w, tmplServerResp, resp)
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +209,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, homeEndpoint, http.StatusSeeOther)
 }
 
+func uploadImageHandler()
+
 func main() {
     var err error
     db, err = dao.DatabaseInit()
@@ -125,7 +232,7 @@ func main() {
 	mux.HandleFunc(homeEndpoint, mainHandler)
 	mux.HandleFunc(loginEndpoint, loginHandler)
 	mux.HandleFunc(logoutEndpoint, logoutHandler)
-
+	mux.HandleFunc(uploadImageEndpoint, uploadImageHandler)
 
 	fmt.Println("Cms server running on port :8080")
     http.ListenAndServe(":8080", mux)
