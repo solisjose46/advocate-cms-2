@@ -3,33 +3,65 @@ package dao
 import (
 	"fmt"
 	"database/sql"
+	"crypto/sha256"
     _ "github.com/mattn/go-sqlite3"
 )
 
 const (
 	cmsDbPath = "db/cms.db"
-	advocateDbPath = "db/cms.db"
+	advocateDbPath = "db/advocate.db"
+	saltSuffix = ":salt"
+	loginQuery = "SELECT Users.password FROM Users WHERE Users.username = ?"
 )
 
-var cmsDatabase *sql.DB
-var advocateDatabase *sql.DB
+type Dao struct {
+	Cms *sql.DB
+	Advocate *sql.DB
+}
 
-func DatabaseInit() error {
+func DatabaseInit() (*Dao, error) {
 	// open cms database
-	cmsDatabase, err  := sql.Open("sqlite3", cmsDbPath)
+	cmsDb, err  := sql.Open("sqlite3", cmsDbPath)
 	if err != nil {
 		fmt.Println("Error trying to open cms database.")
-		return err
+		return nil, err
 	}
-	defer cmsDatabase.Close()
     
 	// open advocate database
-	advocateDatabase, err := sql.Open("sqlite3", advocateDbPath)
+	advocateDb, err := sql.Open("sqlite3", advocateDbPath)
 	if err != nil {
 		fmt.Println("Error trying to open advocate database.")
-		return err
+		cmsDb.Close()
+		return nil, err
 	}
-	defer advocateDatabase.Close()
 
-	return nil
+	return &Dao{
+		Cms: cmsDb,
+		Advocate: advocateDb,
+	}, nil
+}
+
+func (db *Dao) IsValidLogin(username, password string) (bool, error) {
+	userRow, err := db.Cms.Query(loginQuery, username)
+	
+	if err != nil {
+		fmt.Println("Error with login query")
+		return false, err
+	}
+
+	defer userRow.Close()
+
+	// hash and salt password
+	hasher := sha256.New()
+	hasher.Write([]byte(password + saltSuffix))
+	hashedBytes := hasher.Sum(nil)
+	hashedUserPassword := fmt.Sprintf("%x", hashedBytes)
+
+	var dbPassword string
+
+	for userRow.Next() {
+		userRow.Scan(&dbPassword)
+	}
+
+	return dbPassword == hashedUserPassword, nil
 }
