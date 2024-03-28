@@ -1,9 +1,9 @@
-package http
+package main
 
 import (
     "fmt"
-    "advocate-cms-2/internal/dao"
-	"advocate-cms-2/internal/templates"
+    "advocate-cms-2/dao"
+	"advocate-cms-2/templates"
 	"net/http"
 	"html/template"
 	"github.com/gorilla/sessions"
@@ -26,7 +26,7 @@ type ServerCms struct {
 	cookieStore *CookieStore
 	db *dao.Dao
 	mux *ServeMux
-	*templateMan
+	*templates.templateMan
 }
 
 func ServerInit() (*ServerCms) error {
