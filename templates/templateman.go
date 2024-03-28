@@ -7,6 +7,9 @@ import (
 
 const (
 	cmsTmplDir = "templates/cms/"
+	crudImgTmpl = cmsTmplDir + "crud-image.html"
+	imageGalleryTmpl = cmsTmplDir + "image-gallery.html"
+	imageGalleryItemTmpl = cmsTmplDir + "image-gallery-item.html"
 )
 
 type TemplateMan struct {}
@@ -21,4 +24,11 @@ func (t *TemplateMan) GetLoginTmpl(w http.ResponseWriter) {
 	loginHtml := cmsTmplDir + "login.html"
 	tmpl, _ := template.ParseFiles(loginHtml)
 	tmpl.Execute(w, nil)
+}
+
+func (t *TemplateMan) GetUpdateImgTmpl(w http.ResponseWriter) {
+	crudImg := crudImage {
+		Title: updateImageTitle,
+		Endpoint: updateImageTitle,
+	}
 }
