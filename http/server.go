@@ -26,7 +26,7 @@ type ServerCms struct {
 	cookieStore *CookieStore
 	db *dao.Dao
 	mux *ServeMux
-	*templates.Templates
+	*templateMan
 }
 
 func ServerInit() (*ServerCms) error {
@@ -42,7 +42,7 @@ func ServerInit() (*ServerCms) error {
 		cookieStore: sessions.NewCookieStore([]byte)),
 		db: db,
 		mux: http.NewServeMux(),
-		&template.Templates{}
+		&templateMan{}
 	}, nil
 }
 
@@ -86,5 +86,63 @@ func (server *ServerCms) mainHandler(w http.ResponseWriter, r *http.Request) {
 	server.authenticateUser(w, r)
 
 	// else return home page
-	server.GetCmsHome().Execute(w, nil)
+	server.getHomeTmpl().Execute(w, nil)
+}
+
+func (server *ServerCms) loginHandler(w http.ResponseWriter, r *http.Request) {
+
+	// only post and get allowed
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		http.Error(w, httpErrorMethodNotAllowed, http.StatusMethodNotAllowed)
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		server.getLoginTmpl().Execute(w, nil)
+		return
+	}
+
+	// get credentials from body post to validate login
+	r.ParseForm()
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+
+	loginStatus, err := db.IsValidLogin(username, password)
+
+	if err != nil {
+		fmt.Println("Error validating login.")
+		http.Error(w, httpErrorInternalError, http.StatusInternalServerError)
+		return
+	}
+	
+	if !loginStatus {
+		http.Error(w, httpErrorBadLogin, http.StatusBadRequest)
+		return
+	}
+
+	// create session and redirect to home
+	session, _ := server.cookieStore.Get(r, sessionKey)
+	session.Values[sessionId] = username
+	session.Save(r, w)
+
+	http.Redirect(w, r, homeEndpoint, http.StatusSeeOther)
+}
+
+func (server *ServerCms) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	// post only
+	if r.Method != http.MethodPost {
+		http.Error(w, httpErrorMethodNotAllowed, http.StatusMethodNotAllowed)
+		return
+	}
+
+	// redirects to login if not authenticated
+	server.authenticateUser(w, r)
+
+	// delete session
+    session, _ := server.cookieStore.Get(r, sessionKey)
+    delete(session.Values, sessionId)
+    session.Save(r, w)
+
+    // Redirect to the login page.
+    http.Redirect(w, r, loginEndpoint, http.StatusSeeOther)
 }
