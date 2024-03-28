@@ -1,4 +1,4 @@
-package http
+package templates
 
 import (
 	"fmt"
@@ -6,19 +6,19 @@ import (
 )
 
 const (
-	cmsTmplDir = "http/templates/cms/"
+	cmsTmplDir = "templates/cms/"
 )
 
-type templateMan struct {}
+type TemplateMan struct {}
 
-func (t *templateMan) getHomeTmpl() (*Template) {
+func (t *TemplateMan) GetHomeTmpl(w http.ResponseWriter) {
 	homeHtml := cmsTmplDir + "home.html"
 	tmpl, _ := template.ParseFiles(homeHtml)
-	return tmpl 
+	tmpl.Execute(w, nil)
 }
 
-func (t *templateMan) getLoginTmpl() (*Template) {
+func (t *TemplateMan) GetLoginTmpl(w http.ResponseWriter) {
 	loginHtml := cmsTmplDir + "login.html"
 	tmpl, _ := template.ParseFiles(loginHtml)
-	return tmpl 
+	tmpl.Execute(w, nil)
 }

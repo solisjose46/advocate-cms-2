@@ -22,45 +22,11 @@ const (
 	sessionId = "username"
 )
 
-type ServerCms struct {
+type serverCms struct {
 	cookieStore *CookieStore
 	db *dao.Dao
 	mux *ServeMux
-	*templates.templateMan
-}
-
-func ServerInit() (*ServerCms) error {
-
-	db, err := dao.DatabaseInit()
-
-	if err != nil {
-		fmt.Println("Database initialization failed.")
-		return err
-	}
-
-	return &ServerCms {
-		cookieStore: sessions.NewCookieStore([]byte)),
-		db: db,
-		mux: http.NewServeMux(),
-		&templateMan{}
-	}, nil
-}
-
-func (server *ServerCms) ServerShutdown() {
-	if server.db != nil {
-		server.db.Close()
-	}
-}
-
-func (server *ServerCms) ServerStart() {
-	// set app routes
-	server.mux.HandleFunc(homeEndpoint, server.mainHandler)
-	server.mux.HandleFunc(loginEndpoint, server.loginHandler)
-	server.mux.HandleFunc(logoutEndpoint, server.logoutHandler)
-	server.mux.HandleFunc(uploadImageEndpoint, server.uploadImageHandler)
-
-	fmt.Println("Cms server running on port :8080")
-    http.ListenAndServe(":8080", server.mux)
+	*templates.TemplateMan
 }
 
 func (server *ServerCms) authenticateUser(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +34,7 @@ func (server *ServerCms) authenticateUser(w http.ResponseWriter, r *http.Request
 	session, _ := server.cookieStore.Get(r, sessionKey)
 	_, ok := session.Values[sessionId].(string)
 
-	// not authenticated redire to login
+	// not authenticated redirect to login
 	if !ok{
 		http.Redirect(w, r, loginEndpoint, http.StatusSeeOther)
 	}
@@ -76,7 +42,7 @@ func (server *ServerCms) authenticateUser(w http.ResponseWriter, r *http.Request
 
 func (server *ServerCms) mainHandler(w http.ResponseWriter, r *http.Request) {
 
-	// only serving get methods from here
+	// only serving get methods
 	if r.Method != http.MethodGet {
 		http.Error(w, httpErrorMethodNotAllowed, http.StatusMethodNotAllowed)
 		return
@@ -86,7 +52,7 @@ func (server *ServerCms) mainHandler(w http.ResponseWriter, r *http.Request) {
 	server.authenticateUser(w, r)
 
 	// else return home page
-	server.getHomeTmpl().Execute(w, nil)
+	server.GetHomeTmpl(w)
 }
 
 func (server *ServerCms) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -97,17 +63,19 @@ func (server *ServerCms) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// get login
 	if r.Method == http.MethodGet {
-		server.getLoginTmpl().Execute(w, nil)
+		server.GetLoginTmpl(w)
 		return
 	}
 
+	//post
 	// get credentials from body post to validate login
 	r.ParseForm()
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 
-	loginStatus, err := db.IsValidLogin(username, password)
+	loginStatus, err := server.db.IsValidLogin(username, password)
 
 	if err != nil {
 		fmt.Println("Error validating login.")
