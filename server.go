@@ -114,3 +114,19 @@ func (server *ServerCms) logoutHandler(w http.ResponseWriter, r *http.Request) {
     // Redirect to the login page.
     http.Redirect(w, r, loginEndpoint, http.StatusSeeOther)
 }
+
+func (server *ServerCms) uploadImageHandler(w http.ResponseWriter, r *http.Request) {
+	
+	// only post and get allowed
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		http.Error(w, httpErrorMethodNotAllowed, http.StatusMethodNotAllowed)
+		return
+	}
+
+	// redirects to login if not authenticated
+	server.authenticateUser(w, r)
+
+	if r.Method == http.MethodGet {
+		server
+	}
+}

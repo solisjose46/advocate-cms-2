@@ -5,7 +5,6 @@ const (
 	updateImageEndpoint = "/update-image"
 )
 
-
 type imageGalleryItem struct {
 	ImgID string
 	ImgSrc string

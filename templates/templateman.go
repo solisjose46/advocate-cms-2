@@ -26,7 +26,7 @@ func (t *TemplateMan) GetLoginTmpl(w http.ResponseWriter) {
 	tmpl.Execute(w, nil)
 }
 
-func (t *TemplateMan) GetUpdateImgTmpl(w http.ResponseWriter) {
+func (t *TemplateMan) GetCrudImgTmpl(w http.ResponseWriter) {
 	crudImg := crudImage {
 		Title: updateImageTitle,
 		Endpoint: updateImageTitle,
