@@ -9,50 +9,55 @@
 <body>
     {{template "cmsNav" .}}
     <div>
-        <div class="page-title">
+        
+        <div>
             {{.Title}}
         </div>
+
         <div id="server-response"></div>
-        <div id="crud-form">
-            <form hx-post="{{.Endpoint}}" hx-target="#server-response" hx-encoding="multipart/form-data">
+
+        <div>
+            <form hx-post="{{.Endpoint}}" hx-target="#server-response" hx-encoding="multipart/form-data" hx-trigger="update-gallery">
                 <div>
-                    <div class="crud-form-item">
+                    <div>
                         <label for="image-src">Image Name</label>
                     </div>
-                    <div class="crud-form-item">
+                    <div>
                         <input type="text" id="image-src" name="image-src" placeholder="Enter Image Name" required>
                     </div>
                 </div>
                 <div>
-                    <div class="crud-form-item">
+                    <div>
                         <label for="image-alt">Image Alt</label>
                     </div>
-                    <div class="crud-form-item">
+                    <div>
                         <input type="text" id="image-alt" name="image-alt" placeholder="Enter Image Alt" required>
                     </div>
                 </div>
                 <div>
-                    <div class="crud-form-item">
+                    <div>
                         <label for="image">Image</label>
                     </div>
-                    <div class="crud-form-item">
+                    <div>
                         <input type="file" id="image" name="image" accept="image/*" required>
                     </div>
                 </div>
                 <div>
                     <input type="hidden" name="image-id" id="image-id">
                 </div>
-                <div class="crud-form-btns">
-                    <div class="crud-form-btn">
+                <div>
+                    <div>
                         <input type="submit" value="Submit">
                     </div>
-                    <div class="crud-form-btn">
+                    <div>
                         <input type="reset" value="Reset">
                     </div>
                 </div>
             </form>
         </div>
+
         {{template "imageGallery" .}}
+        
     </div>
 </body>
 </html>
